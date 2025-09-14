@@ -1,9 +1,6 @@
 #include <TimerEvent.h>
 #include <SimpleWebSerial.h>
 
-#define CLOCK_PIN 12
-#define LED_PIN 13
-
 #define DISABLE_LOGGING false
 
 SimpleWebSerial WebSerial;
@@ -13,29 +10,17 @@ bool process_event = false;
 bool clock_state = false;
 bool clock_running = false;
 
-int addr_pins[] = {53,51,49,47,45,43,41,39, 
+int addr_pins[] = {22,24,26,28,30,32,34,36,
                    38,40,42,44,46,48,50,52};
 
-int data_pins[] = {34, 32, 30, 28,
-                   29, 31, 33, 35};
+int data_pins[] = {53,51,49,47, 
+                   45,43,41,39};
 
-int rw_pin = 24;
+#define CLOCK_PIN 12
+#define LED_PIN 13
+#define RW_PIN 23
 
 TimerEvent clock_timer_event;
-
-// void clock_start_stop_pressed(const int is_up) {
-//   if (!is_up) {
-//       if (hz != 0) {
-//         if (clock_running) {
-//           clock_state = false;
-//           digitalWrite(CLOCK_PIN, LOW);
-//           digitalWrite(LED_PIN, LOW);
-//         }
-//         clock_running = !clock_running;
-//       }
-// //      process_event = true;
-//   }
-// }
 
 void print_pins() {
   uint16_t address=0;
@@ -54,7 +39,7 @@ void print_pins() {
     s+=bit?"1":"0";
   }
   s+="   ";
-  uint8_t rw = digitalRead(rw_pin);
+  uint8_t rw = digitalRead(RW_PIN);
   sprintf(str_out, "%04x %c %02x", address, rw?'r':'W', data);
   s+=str_out;
   WebSerial.send("log", s);
@@ -96,7 +81,7 @@ void init_io_pins() {
   for (int i=0;i<8;i++) {
     pinMode(data_pins[i], INPUT);    
   }
-  pinMode(rw_pin, INPUT);
+  pinMode(RW_PIN, INPUT);
 }
 
 void handleSWSClock(JSONVar parameter) {

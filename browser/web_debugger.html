@@ -1,0 +1,136 @@
+<html>
+<head>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" 
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+            crossorigin="anonymous"></script>
+  <script lang="text/javascript" src="https://unpkg.com/simple-web-serial@latest/dist/simple-web-serial.min.js"></script>
+
+<script>
+
+var swsConnection = null;
+var followOutput = true;
+var hz = 1;
+var  computedStyle = null;
+var  lineHeight = null;
+var lineCounts = {};
+var notifiedLogTruncation = false;
+
+function add_text(id, text, end="\n") {
+  const textCtl = $("#"+id);
+  if (!(textCtl in lineCounts)){
+    lineCounts[textCtl] = 0;
+  }
+  lineCounts[textCtl] += 1;
+  var newVal = textCtl.val() + text + end;
+  textCtl.val(newVal);
+  var scrollHeight = textCtl[0].scrollHeight
+  if (followOutput) {
+    textCtl.scrollTop(scrollHeight);
+  }
+  if (lineCounts[textCtl] > 1000) {
+    if (!notifiedLogTruncation) {
+      $("#log").val($("#log").val() + "Logged > 1000 lines.  Log will be trimmed down to last 1000 lines.\n");
+      notifiedLogTruncation = true;
+    }
+    newVal = newVal.slice(newVal.indexOf("\n")+1)
+    textCtl.val(newVal);
+  }
+}
+
+function load() {
+  swsConnection = SimpleWebSerial.setupSerialConnection({
+      requestElement: "connect",
+      baudRate: 115200,
+  });
+  swsConnection.on('log', function(data) {
+    add_text("output", data);
+  });
+}
+
+
+// Request access to a serial port
+async function toggleSerial() {
+  try {
+    $("#connect").html("Connected");
+    $("#connect").prop("disabled",true);
+    add_text("log","Started Device Connection");
+  } catch (error) {
+    console.error("Serial connection error:", error);
+    add_text("log", "Failed to Connect to Device: "+error);
+  }
+}
+
+clock_running = false
+
+function toggleClock() {
+  if (!swsConnection.ready()) {
+    alert("You must connect to a device before sending commands.");
+    return;
+  }
+
+  hz = Number($("#hz").val());
+  if (Number.isNaN(hz)) {
+    alert("The clock interval must be a whole or decimal number (double).");
+    return;
+  }
+  if (clock_running) {
+    $("#start").html("Start Clock");
+      swsConnection.send("clock",{
+        action: "stop",
+      });
+  }
+  else {
+    $("#start").html("Stop Clock");      
+    swsConnection.send("clock",{
+      action: "start",
+      hz: hz
+    });
+  }
+  add_text("log", (clock_running?"Stopping":"Starting") +" Clock");
+  clock_running = !clock_running;
+}
+
+function pulse() {
+  if (!swsConnection.ready()) {
+    alert("You must connect to a device before sending commands.");
+    return;
+  }
+  swsConnection.send("clock", {action: "pulse"});
+}
+
+function updateFollowOutput() {
+  followOutput = $("#follow").val();
+}
+
+</script>
+
+<body onload="load()">
+  <div style="width: 100%; overflow: hidden;">
+    <button id='connect' onclick="toggleSerial()">Connect Serial</button>
+    <br>
+    <div style="width: 100%; overflow: hidden;">
+      <div style="float: left;">
+        <button id='start' onclick="toggleClock()">Start Clock</button>
+        <input type="text" size="5" value="1" id="hz"></input> Hz<br>
+      </div>
+      <div style="float: right;">
+        <button id='pulse' onclick="pulse()">Pulse Clock</button>
+      </div>
+    </div>
+    <br>
+    <div style="width: 100%; overflow: hidden;">
+      <div style="float: left; vertical-align: bottom;">
+        Device Output  
+      </div>
+      <div style="float: right;">
+        <input type="checkbox" id="follow" onclick="updateFollowOutput()" style="float:left" checked></input>
+        <label for="follow" style="float:right;">Follow</label>
+      </div>
+    </div>
+    <textarea id='output' rows="40" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+    <br>
+    Log<br>
+    <textarea id='log' rows="10" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+  </div>
+</body>
+</head>

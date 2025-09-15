@@ -45,6 +45,11 @@ function load() {
   swsConnection.on('log', function(data) {
     add_text("output", data);
   });
+  const show = localStorage.getItem("showdebugger");
+  if (show == "true") {
+    $("#debugger").show();
+    $("#debuggerButton").text("Hide Debugger");
+  }
 }
 
 
@@ -102,6 +107,22 @@ function updateFollowOutput() {
   followOutput = $("#follow").val();
 }
 
+function toggleDebuggerView() {
+  const debuggerView = $("#debugger");
+  var show = null;
+  if (debuggerView.is(":hidden")) {
+    $("#debugger").show();
+    $("#debuggerButton").text("Hide Debugger");
+    show = true;
+  }
+  else {
+    $("#debugger").hide();
+    $("#debuggerButton").text("Show Debugger");
+    show = false;
+  }
+  localStorage.setItem("showdebugger", show);
+}
+
 </script>
 
 <body onload="load()">
@@ -111,26 +132,29 @@ function updateFollowOutput() {
     <div style="width: 100%; overflow: hidden;">
       <div style="float: left;">
         <button id='start' onclick="toggleClock()">Start Clock</button>
-        <input type="text" size="5" value="1" id="hz"></input> Hz<br>
+        <input type="text" size="1" value="1" id="hz"></input> Hz<br>
       </div>
       <div style="float: right;">
         <button id='pulse' onclick="pulse()">Pulse Clock</button>
       </div>
     </div>
     <br>
-    <div style="width: 100%; overflow: hidden;">
-      <div style="float: left; vertical-align: bottom;">
-        Device Output  
+    <div id="debugger" style="display:none;">
+      <div style="width: 100%; overflow: hidden;">
+        <div style="float: left; vertical-align: bottom;">
+          Device Output  
+        </div>
+        <div style="float: right;">
+          <input type="checkbox" id="follow" onclick="updateFollowOutput()" style="float:left" checked></input>
+          <label for="follow" style="float:right;">Follow</label>
+        </div>
       </div>
-      <div style="float: right;">
-        <input type="checkbox" id="follow" onclick="updateFollowOutput()" style="float:left" checked></input>
-        <label for="follow" style="float:right;">Follow</label>
-      </div>
+      <textarea id='output' rows="40" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+      <br>
+      Log<br>
+      <textarea id='log' rows="10" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
     </div>
-    <textarea id='output' rows="40" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
-    <br>
-    Log<br>
-    <textarea id='log' rows="10" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
   </div>
+  <button onclick="toggleDebuggerView()" id="debuggerButton">Show Debugger</button>
 </body>
 </head>

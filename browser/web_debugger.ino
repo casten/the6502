@@ -1,7 +1,9 @@
 #include <TimerEvent.h>
 #include <SimpleWebSerial.h>
 
-#define DISABLE_LOGGING false
+#define CLOCK_PIN 31
+#define LED_PIN 13
+#define RW_PIN 23
 
 SimpleWebSerial WebSerial;
 
@@ -16,13 +18,13 @@ int addr_pins[] = {22,24,26,28,30,32,34,36,
 int data_pins[] = {53,51,49,47, 
                    45,43,41,39};
 
-#define CLOCK_PIN 12
-#define LED_PIN 13
-#define RW_PIN 23
-
 TimerEvent clock_timer_event;
+bool disable_logging = false;
 
 void print_pins() {
+  if (disable_logging) {
+    return;
+  }
   uint16_t address=0;
   uint8_t data=0;
   char str_out[64] = {0};
@@ -63,9 +65,7 @@ void clock_cb() {
     digitalWrite(CLOCK_PIN, clock_state?HIGH:LOW);
     digitalWrite(LED_PIN, clock_state?HIGH:LOW);
     if (clock_state) {
-      if (!DISABLE_LOGGING) {
         print_pins();
-      }
     }
   }
   else {
@@ -84,7 +84,7 @@ void init_io_pins() {
   pinMode(RW_PIN, INPUT);
 }
 
-void handleSWSClock(JSONVar parameter) {
+void handleSWSMsg(JSONVar parameter) {
   if (parameter["action"] == String("start")) {
     clock_running = true;
     hz = parameter["hz"];
@@ -103,6 +103,10 @@ void handleSWSClock(JSONVar parameter) {
       }
       step();
   }
+  else
+  if (parameter["action"] == String("set_logging")) {
+    disable_logging = parameter["enabled"];
+  }
   process_event = true;
 }
 
@@ -114,7 +118,7 @@ void setup() {
   clock_timer_event.disable();
   init_io_pins();
   Serial.println("\nDebugger Initialized.");
-  WebSerial.on("clock", handleSWSClock);
+  WebSerial.on("debugger", handleSWSMsg);
 }
 
 void loop() {

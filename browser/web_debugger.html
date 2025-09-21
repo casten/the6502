@@ -79,17 +79,17 @@ function toggleClock() {
     return;
   }
   if (clock_running) {
+    swsConnection.send("debugger",{
+      action: "stop",
+    });
     $("#start").html("Start Clock");
-      swsConnection.send("clock",{
-        action: "stop",
-      });
   }
   else {
-    $("#start").html("Stop Clock");      
-    swsConnection.send("clock",{
+    swsConnection.send("debugger",{
       action: "start",
       hz: hz
     });
+    $("#start").html("Stop Clock");      
   }
   add_text("log", (clock_running?"Stopping":"Starting") +" Clock");
   clock_running = !clock_running;
@@ -100,7 +100,8 @@ function pulse() {
     alert("You must connect to a device before sending commands.");
     return;
   }
-  swsConnection.send("clock", {action: "pulse"});
+  swsConnection.send("debugger", {action: "pulse"});
+  add_text("log","Pulsed clock");
 }
 
 function updateFollowOutput() {
@@ -123,6 +124,21 @@ function toggleDebuggerView() {
   localStorage.setItem("showdebugger", show);
 }
 
+function toggleLogging() {
+  if (!swsConnection.ready()) {
+    alert("You must connect to a device before sending commands.");
+    return;
+  }
+
+  var dl_check = $("#disable_logging").is(":checked");
+  swsConnection.send("debugger",{
+    action: "set_logging",
+    enabled: !dl_check
+  });
+  add_text("log","Set logging enabled to: "+dl_check);
+}
+
+
 </script>
 
 <body onload="load()">
@@ -132,11 +148,17 @@ function toggleDebuggerView() {
     <div style="width: 100%; overflow: hidden;">
       <div style="float: left;">
         <button id='start' onclick="toggleClock()">Start Clock</button>
-        <input type="text" size="1" value="1" id="hz"></input> Hz<br>
+        <input type="text" size="1" value="1" id="hz"></input> Hz
       </div>
-      <div style="float: right;">
-        <button id='pulse' onclick="pulse()">Pulse Clock</button>
-      </div>
+    </div>
+    <div>
+      <button id='pulse' onclick="pulse()">Pulse Clock</button>
+    </div>
+    <div>
+      <input type="checkbox" id="disable_logging" onclick="toggleLogging()"></input>
+      <label for="disable_logging">Disable Logging</label>
+      <input type="checkbox" id="follow" onclick="updateFollowOutput()"checked></input>
+      <label for="follow">Follow</label>
     </div>
     <br>
     <div id="debugger" style="display:none;">
@@ -144,15 +166,11 @@ function toggleDebuggerView() {
         <div style="float: left; vertical-align: bottom;">
           Device Output  
         </div>
-        <div style="float: right;">
-          <input type="checkbox" id="follow" onclick="updateFollowOutput()" style="float:left" checked></input>
-          <label for="follow" style="float:right;">Follow</label>
-        </div>
       </div>
-      <textarea id='output' rows="40" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+      <textarea id='output' rows="30" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
       <br>
       Log<br>
-      <textarea id='log' rows="10" style="width: 100%;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+      <textarea id='log' rows="10" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
     </div>
   </div>
   <button onclick="toggleDebuggerView()" id="debuggerButton">Show Debugger</button>

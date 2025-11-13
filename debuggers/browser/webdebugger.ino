@@ -4,6 +4,7 @@
 #define CLOCK_PIN 31
 #define LED_PIN 13
 #define RW_PIN 23
+#define RESET_PIN 25
 
 SimpleWebSerial WebSerial;
 
@@ -42,7 +43,8 @@ void print_pins() {
   }
   s+="   ";
   uint8_t rw = digitalRead(RW_PIN);
-  sprintf(str_out, "%04x %c %02x", address, rw?'r':'W', data);
+  uint8_t reset = digitalRead(RESET_PIN);
+  sprintf(str_out, "%04x %02x %c %c", address, data, rw?'r':'W', reset?'.':'R');
   s+=str_out;
   WebSerial.send("log", s);
 }

@@ -13,7 +13,7 @@
 
 var swsConnection = null;
 var followOutput = true;
-var hz = 1;
+var hz = 10;
 var  computedStyle = null;
 var  lineHeight = null;
 var lineCounts = {};
@@ -49,11 +49,15 @@ function load() {
   swsConnection.on('log', function(data) {
     add_text("output", data);
   });
-  const show = localStorage.getItem("showdebugger");
-  if (show == "true") {
+  const showdebugger = localStorage.getItem("showdebugger");
+  const showheader = localStorage.getItem("showheader");
+  if (showdebugger == "true") {
     $("#debugger").show();
     $("#debuggerButton").text("Hide Debugger");
   }
+  if (showheader == "true") {
+    click_header();
+  }  
 }
 
 
@@ -142,6 +146,12 @@ function toggleLogging() {
   add_text("log","Set logging enabled to: "+dl_check);
 }
 
+function click_header() {
+  $("#header_div").toggle();
+  const debuggerView = $("#header_div");
+
+  localStorage.setItem("showheader", debuggerView.is(":hidden"));
+}
 
 </script>
 
@@ -152,7 +162,7 @@ function toggleLogging() {
     <div style="width: 100%; overflow: hidden;">
       <div style="float: left;">
         <button id='start' onclick="toggleClock()">Start Clock</button>
-        <input type="text" size="1" value="1" id="hz"></input> Hz
+        <input type="text" size="1" value="10" id="hz"></input> Hz
       </div>
     </div>
     <div>
@@ -160,15 +170,35 @@ function toggleLogging() {
     </div>
     <div>
       <input type="checkbox" id="disable_logging" onclick="toggleLogging()"></input>
-      <label for="disable_logging">Disable Logging</label>
+      <label for="disable_logging" title="You can disable logging to increase clock speed.">Disable Logging</label>
       <input type="checkbox" id="follow" onclick="updateFollowOutput()"checked></input>
-      <label for="follow">Follow</label>
+      <label for="follow" title="Scroll to Follow the Output.">Follow</label>
     </div>
     <br>
     <div id="debugger" style="display:none;">
       <div style="width: 100%; overflow: hidden;">
         <div style="float: left; vertical-align: bottom;">
-          Device Output  
+          <span style="font-size: 20px; font-weight:bold">Device Output</span>
+        </div>
+        <br>
+        <br>
+        <div>
+          <table onclick="click_header()" title="Click to show/hide.">
+            <tr align="left">
+              <th width="135">Address(B)</th>
+              <th width="75">Data(B)</th>
+              <th width="75">Addr(H)</th>
+              <th width="100">Data(H)</th>
+              <th width="100">Read/Write</th>
+              <th width="100">Reset</th>
+            </tr>
+          </table>
+          <div id='header_div' onclick="click_header()" title="Click to Hide/Show">
+            <pre style="margin:0">     |               |          |         |              |              |</pre>
+            <pre style="margin:0">     |               |          |   |------              |              |</pre>
+            <pre style="margin:0">     |               |          |   |  |-----------------               |</pre>
+            <pre style="margin:0">     |               |          |   |  |  |------------------------------</pre>
+          </div>
         </div>
       </div>
       <textarea id='output' rows="30" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>

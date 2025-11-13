@@ -1,0 +1,184 @@
+<html>
+<head>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" 
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+            crossorigin="anonymous"></script>
+  <script lang="text/javascript" src="https://unpkg.com/simple-web-serial@latest/dist/simple-web-serial.min.js"></script>
+
+<link rel="icon" href="/img/domain/favicon.ico" sizes="32x32">
+<link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+
+<script>
+
+var swsConnection = null;
+var followOutput = true;
+var hz = 1;
+var  computedStyle = null;
+var  lineHeight = null;
+var lineCounts = {};
+var notifiedLogTruncation = false;
+
+function add_text(id, text, end="\n") {
+  const textCtl = $("#"+id);
+  if (!(textCtl in lineCounts)){
+    lineCounts[textCtl] = 0;
+  }
+  lineCounts[textCtl] += 1;
+  var newVal = textCtl.val() + text + end;
+  textCtl.val(newVal);
+  var scrollHeight = textCtl[0].scrollHeight
+  if (followOutput) {
+    textCtl.scrollTop(scrollHeight);
+  }
+  if (lineCounts[textCtl] > 1000) {
+    if (!notifiedLogTruncation) {
+      $("#log").val($("#log").val() + "Logged > 1000 lines.  Log will be trimmed down to last 1000 lines.\n");
+      notifiedLogTruncation = true;
+    }
+    newVal = newVal.slice(newVal.indexOf("\n")+1)
+    textCtl.val(newVal);
+  }
+}
+
+function load() {
+  swsConnection = SimpleWebSerial.setupSerialConnection({
+      requestElement: "connect",
+      baudRate: 115200,
+  });
+  swsConnection.on('log', function(data) {
+    add_text("output", data);
+  });
+  const show = localStorage.getItem("showdebugger");
+  if (show == "true") {
+    $("#debugger").show();
+    $("#debuggerButton").text("Hide Debugger");
+  }
+}
+
+
+// Request access to a serial port
+async function toggleSerial() {
+  try {
+    $("#connect").html("Connected");
+    $("#connect").prop("disabled",true);
+    add_text("log","Started Device Connection");
+  } catch (error) {
+    console.error("Serial connection error:", error);
+    add_text("log", "Failed to Connect to Device: "+error);
+  }
+}
+
+clock_running = false
+
+function toggleClock() {
+  if (!swsConnection.ready()) {
+    alert("You must connect to a device before sending commands.");
+    return;
+  }
+
+  hz = Number($("#hz").val());
+  if (Number.isNaN(hz)) {
+    alert("The clock interval must be a whole or decimal number (double).");
+    return;
+  }
+  if (clock_running) {
+    swsConnection.send("debugger",{
+      action: "stop",
+    });
+    $("#start").html("Start Clock");
+  }
+  else {
+    swsConnection.send("debugger",{
+      action: "start",
+      hz: hz
+    });
+    $("#start").html("Stop Clock");      
+  }
+  add_text("log", (clock_running?"Stopping":"Starting") +" Clock");
+  clock_running = !clock_running;
+}
+
+function pulse() {
+  if (!swsConnection.ready()) {
+    alert("You must connect to a device before sending commands.");
+    return;
+  }
+  swsConnection.send("debugger", {action: "pulse"});
+  add_text("log","Pulsed clock");
+}
+
+function updateFollowOutput() {
+  followOutput = $("#follow").val();
+}
+
+function toggleDebuggerView() {
+  const debuggerView = $("#debugger");
+  var show = null;
+  if (debuggerView.is(":hidden")) {
+    $("#debugger").show();
+    $("#debuggerButton").text("Hide Debugger");
+    show = true;
+  }
+  else {
+    $("#debugger").hide();
+    $("#debuggerButton").text("Show Debugger");
+    show = false;
+  }
+  localStorage.setItem("showdebugger", show);
+}
+
+function toggleLogging() {
+  if (!swsConnection.ready()) {
+    alert("You must connect to a device before sending commands.");
+    return;
+  }
+
+  var dl_check = $("#disable_logging").is(":checked");
+  swsConnection.send("debugger",{
+    action: "set_logging",
+    enabled: !dl_check
+  });
+  add_text("log","Set logging enabled to: "+dl_check);
+}
+
+
+</script>
+
+<body onload="load()">
+  <div style="width: 100%; overflow: hidden;">
+    <button id='connect' onclick="toggleSerial()">Connect Serial</button>
+    <br>
+    <div style="width: 100%; overflow: hidden;">
+      <div style="float: left;">
+        <button id='start' onclick="toggleClock()">Start Clock</button>
+        <input type="text" size="1" value="1" id="hz"></input> Hz
+      </div>
+    </div>
+    <div>
+      <button id='pulse' onclick="pulse()">Pulse Clock</button>
+    </div>
+    <div>
+      <input type="checkbox" id="disable_logging" onclick="toggleLogging()"></input>
+      <label for="disable_logging">Disable Logging</label>
+      <input type="checkbox" id="follow" onclick="updateFollowOutput()"checked></input>
+      <label for="follow">Follow</label>
+    </div>
+    <br>
+    <div id="debugger" style="display:none;">
+      <div style="width: 100%; overflow: hidden;">
+        <div style="float: left; vertical-align: bottom;">
+          Device Output  
+        </div>
+      </div>
+      <textarea id='output' rows="30" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+      <br>
+      Log<br>
+      <textarea id='log' rows="10" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
+    </div>
+  </div>
+  <button onclick="toggleDebuggerView()" id="debuggerButton">Show Debugger</button>
+  <br><br>
+  For use with <a href="https://the6502.com">the6502.com</a> workshop. 
+</body>
+</head>

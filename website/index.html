@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>the6502</title>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="icon" href="/img/favicon.ico" sizes="32x32">
+<link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+
+<script>
+function downloadURI(uri, name) {
+  var link = document.createElement("a");
+  link.download = name;
+  link.href = uri;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  delete link;
+}
+</script>
+
+
+<style>
+  body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
+  .w3-bar,h1,button {font-family: "Montserrat", sans-serif}
+  .fa-anchor,.fa-coffee {font-size:200px}
+  .my-background-div {
+      width: 100%; /* Set width as needed */
+      background-image: url('/img/breadboard2.png');
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center;
+      color: white; 
+      padding: 20px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="w3-top">
+  <div class="w3-bar w3-red w3-card w3-left-align w3-large">
+    <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-red" href="javascript:void(0);" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+    <a href="#" class="w3-bar-item w3-button w3-padding-large w3-white">Home</a>
+    <a href="#about" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">About</a>
+    <a href="#contact" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Contact</a>
+  </div>
+
+  <!-- Navbar on small screens -->
+  <div id="navDemo" class="w3-bar-block w3-white w3-hide w3-hide-large w3-hide-medium w3-large">
+    <a href="#" class="w3-bar-item w3-button w3-padding-large">Home</a>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="w3-container w3-red w3-center my-background-div" style="padding:128px 16px">
+  <h1 class="w3-margin w3-jumbo">the6502</h1>
+  <p class="w3-xlarge">8-bit computer workshop</p>
+  <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" type="submit" 
+      onclick="window.open('https://github.com/casten/the6502/blob/main/debuggers/browser/webdebugger.ino', '_blank')">
+      Get Arduino Code</button><br>
+
+  <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" 
+      onclick="window.open('/web/webdebugger.html','_blank')">
+      Open Web Debugger</button><br>
+
+  <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top"
+      onclick="window.open('https://docs.google.com/presentation/d/1a2K_GWmT9lt4g9_UzFmta-y-0TUjwDWGLETbuWh8KCM','_blank')">
+      Introduction Slide Deck</button>
+
+  <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top"
+      onclick="window.open('https://github.com/casten/the6502/wiki','_blank')">
+      Workshop Docs (partipants only!)</button><br>
+  <br>
+  <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top"
+      onclick="window.open('https://forms.gle/h6GfKcTfZxoELR7A8','_blank')">
+      Mind Completing a Survey?</button><br>
+</header>
+
+<div class="w3-row-padding w3-padding-64 w3-container" id="about">
+  <div class="w3-content">
+    <div class="w3-twothird">
+      <h1>About</h1>
+      <h5 class="w3-padding-32">
+         the6502 is a workshop where you can build your own computer from just a few chips, a couple breadboards and some wires.<br>
+         <br>
+         You'll have the opportunity to learn and understand the parts of a computer, how to configure the parts to work together, and how to write a Hello World program at nearly the lowest possible level.<br>
+         <br>
+         As a bonus, you'll be working with a historically important CPU, the 6502 which was used for early Apple, Atari, Commodore, Nintendo computers and gaming systems. 
+      </h5>
+
+      <p class="w3-text-grey"></p>
+    </div>
+
+    <div class="w3-third w3-center">
+      <img class="fa w3-padding-64 w3-text-red" src="/img/network2.png" width="300"></i>
+    </div>
+  </div>
+</div>
+
+<div class="w3-row-padding w3-padding-64 w3-container" id="contact">
+  <div class="w3-content">
+    <div class="w3-twothird">
+      <h1>Contact</h1>
+      <h5 class="w3-padding-32">
+          Want to attend or schedule a workshop?<br>
+          Email:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          info {at} the6502 {dot} com<br>
+          for details.
+      </h5>
+
+      <p class="w3-text-grey"></p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

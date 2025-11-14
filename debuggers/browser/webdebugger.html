@@ -153,6 +153,173 @@ function click_header() {
   localStorage.setItem("showheader", debuggerView.is(":hidden"));
 }
 
+function get_instrs(txt) {
+  try {
+    lines = txt.split("\n");
+    instrs = [];
+    for (index in lines) {
+      line = lines[index];
+      toks = line.split(/\s+/);
+      instr = {
+        addr_b: toks[0],
+        data_b: toks[1],
+        addr: toks[2],
+        data: toks[3],
+        rw: toks[4],
+        reset: toks[5]
+      }
+      instrs.push(instr);
+    }
+  }
+  catch (error ){
+    return [{error:"Failed to parse.",
+            details: error}]
+  }  
+  return instrs;
+}
+
+function get_wrong_lines(addr) {
+  var actual = parseInt(addr,16);
+  var expected = parseInt("fffc",16);
+  var expected_bits = [];
+  var actual_bits = [];
+  for (i=0;i<16;i++) {
+    expected_bits.unshift(expected&1);
+    expected = expected >> 1;
+    actual_bits.unshift(actual&1);
+    actual = actual >> 1;
+  }
+  var incorrect_bits = [];
+  for (i=0;i<16;i++) {
+    if (actual_bits[i] != expected_bits[i]) {
+      incorrect_bits.push(actual_bits[i]);
+    }
+    else {
+      incorrect_bits.push("_");
+    }
+  }
+  return "Expected Bits: "+expected_bits.join("")+"\n"+
+         "Actual Bits  : "+actual_bits.join("")+"\n"+
+         "Errors       : "+incorrect_bits.join("");
+}
+
+function diagnose_missing_reset_vector(instrs) {
+  var resetting = false;
+  var reset_phase = 0;
+  for (index in instrs){
+    if (instrs[index].reset == 'R') {
+      resetting = true;
+      continue;
+    }
+    else {
+      if (reset_phase == 7) {
+         //We expect addr 0xfffc here.  If we don't get it, perhaps it is a wiring issue.
+         if (instrs[index].addr == 'fffc') {
+           return "This is surprising. We see 0xfffc in the right spot.  But the reason we got here was this was missing. Maybe this is a bug in the tools?";
+         }
+         return "We expected fffc 7 cycles after the Reset button was released.\n"+
+                   "However, we saw: "+ instrs[index].addr +".  Details:\n"+
+                   get_wrong_lines(instrs[index].addr);
+      }
+      if (resetting) {
+        reset_phase += 1;
+      }      
+    }
+  }
+  if (!resetting) {
+    return "No reset signal was detected.  Be sure:\n"+
+     "A.  You are holding down the reset button for at least 3 clock cycles.\n" +
+     "B.  Pin 25 on the Arduino is connected to a common terminal to the 6502 Reset Pin #40.\n"+
+     "C.  Double check the reset button wiring.  Common problems include:\n"+
+     "   i.   Incorrect wiring.\n"+
+     "   ii.  A rotated 4 post reset switch.  Try rotating it 90 degrees.\n"+
+     "   iii. Be sure the resistor has not come lose or gone missing.\n";
+  }  
+}
+
+function parse(txt) {
+  start = -1;
+  instrs = get_instrs(txt);
+  if ("error" in instrs[0]) {
+    return instrs[0];
+  }
+  for (index in instrs){
+    if (instrs[index].addr == 'fffc') {
+      start = index;
+      break;
+    }
+  }
+  if (start == -1) {
+    help = diagnose_missing_reset_vector(instrs);
+    return [{error:"Reset vector address 0xfffc not found.",
+            details: help}];
+  }
+  instrs = instrs.slice(index)
+  return instrs;
+}
+
+function instr_info(code, name, bytes, cycles) {
+  return {code:code, name:name, bytes:bytes, cycles:cycles};
+}
+
+function lookup_instruction(data) {
+  if (typeof data == "string") {
+    data = parseInt(data,"16");
+  }
+  instrs = {
+    0xea: instr_info("NOP", "No Op", 1, 2),
+    0xa9: instr_info("LDA", "Load Accum", 2, 2),
+    0x8d: instr_info("STA", "Store Accum In Memory", 3, 4),
+    0x6a: instr_info("ROR", "Rotate Right", 1, 2),
+    0x4c: instr_info("JMP", "Jump", 3, 3),
+  }
+  if (data in instrs) {
+    return instrs[data];
+  }
+  return instr_info("parse_error", "", 0, 0);
+}
+
+function print_instrs(instrs) {
+  var output = "Address, Data, Instruction Info\n"+
+               "-----------------------------\n";
+
+  var instrs_count = instrs.length;
+  output += `fffc, ${instrs[0].data}, Load Start Address High Byte\n`;
+  output += `fffd, ${instrs[1].data}, Load Start Address Low Byte\n`;
+
+  for(log_events=2; log_events<instrs_count-2; log_events++) {
+    var instr = instrs[log_events]
+    try {
+      instruction = lookup_instruction(instr.data)
+      output += `${instr.addr}, ${instr.data}, ${instruction.code}: `;
+      for (data_byte=0; data_byte<(instruction.bytes-1); data_byte+=1) {
+        output += `data=${instrs[log_events+1].data}, `;
+        log_events+=1;
+      }
+      //Wait any additional extra cycles
+      if (instruction.cycles > instruction.bytes) {
+        log_events += instruction.cycles-instruction.bytes;
+      }
+    }
+    catch(error) {
+      output += `error:${error}`;
+    }
+    output += '\n';
+  }
+  return output;
+}
+
+function decompile() {
+  var txt = $("#output").val();
+  instrs = parse(txt);
+  if ("error" in instrs[0]) {
+    $("#decomp").val(instrs[0].error+'\n'+instrs[0].details);
+  }
+  else{
+    $("#decomp").val(print_instrs(instrs));    
+  }
+}
+
 </script>
 
 <body onload="load()">
@@ -183,25 +350,33 @@ function click_header() {
         <br>
         <br>
         <div>
-          <table onclick="click_header()" title="Click to show/hide.">
-            <tr align="left">
-              <th width="135">Address(B)</th>
-              <th width="75">Data(B)</th>
-              <th width="75">Addr(H)</th>
-              <th width="100">Data(H)</th>
-              <th width="100">Read/Write</th>
-              <th width="100">Reset</th>
-            </tr>
-          </table>
-          <div id='header_div' onclick="click_header()" title="Click to Hide/Show">
-            <pre style="margin:0">     |               |          |         |              |              |</pre>
-            <pre style="margin:0">     |               |          |   |------              |              |</pre>
-            <pre style="margin:0">     |               |          |   |  |-----------------               |</pre>
-            <pre style="margin:0">     |               |          |   |  |  |------------------------------</pre>
+          <div>
+            <table onclick="click_header()" title="Click to show/hide.">
+              <tr align="left">
+                <th width="135">Address(B)</th>
+                <th width="75">Data(B)</th>
+                <th width="75">Addr(H)</th>
+                <th width="100">Data(H)</th>
+                <th width="100">Read/Write</th>
+                <th width="100">Reset</th>
+              </tr>
+            </table>
+            <div id='header_div' onclick="click_header()" title="Click to Hide/Show">
+              <pre style="margin:0">     |               |          |         |              |              |</pre>
+              <pre style="margin:0">     |               |          |   |------              |              |</pre>
+              <pre style="margin:0">     |               |          |   |  |-----------------               |</pre>
+              <pre style="margin:0">     |               |          |   |  |  |------------------------------</pre>
+            </div>
           </div>
         </div>
+        <div style="float: left;">
+          <textarea style="width: 600;height: 400" id='output' rows="30" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
+        </div>
+        <div style="margin-top:-20">
+          <button style="display:block;" onclick="decompile()">Decompile</button>
+          <textarea id='decomp' rows="28" style="width: 600;height: 400" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea> 
+        </div>
       </div>
-      <textarea id='output' rows="30" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>
       <br>
       Log<br>
       <textarea id='log' rows="10" style="width: 600;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" readonly></textarea>

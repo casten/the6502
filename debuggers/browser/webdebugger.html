@@ -51,13 +51,18 @@ function load() {
   });
   const showdebugger = localStorage.getItem("showdebugger");
   const showheader = localStorage.getItem("showheader");
+  const showdecompile = localStorage.getItem("showdecompile");
   if (showdebugger == "true") {
     $("#debugger").show();
     $("#debuggerButton").text("Hide Debugger");
   }
   if (showheader == "true") {
     click_header();
-  }  
+  }
+  if (showdecompile == "true") {
+    $("#decomp_div").show();
+    $("#decompile_check").prop("checked", true);
+  }
 }
 
 
@@ -114,6 +119,11 @@ function pulse() {
 
 function updateFollowOutput() {
   followOutput = $("#follow").val();
+}
+
+function updateShowDecompiler() {
+  $("#decomp_div").toggle();
+  localStorage.setItem("showdecompile", !$("#decomp_div").is(":hidden"));
 }
 
 function toggleDebuggerView() {
@@ -338,8 +348,10 @@ function decompile() {
     <div>
       <input type="checkbox" id="disable_logging" onclick="toggleLogging()"></input>
       <label for="disable_logging" title="You can disable logging to increase clock speed.">Disable Logging</label>
-      <input type="checkbox" id="follow" onclick="updateFollowOutput()"checked></input>
+      <input type="checkbox" id="follow" onclick="updateFollowOutput()" checked></input>
       <label for="follow" title="Scroll to Follow the Output.">Follow</label>
+      <input type="checkbox" id="decompile_check" onclick="updateShowDecompiler()"></input>      
+      <label for="decompile_check" title="Show Decompiler Tool.">Show Decompiler</label>
     </div>
     <br>
     <div id="debugger" style="display:none;">
@@ -372,9 +384,9 @@ function decompile() {
         <div style="float: left;">
           <textarea style="width: 600;height: 400" id='output' rows="30" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
         </div>
-        <div style="margin-top:-20">
-          <button style="display:block;" onclick="decompile()">Decompile</button>
-          <textarea id='decomp' rows="28" style="width: 600;height: 400" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea> 
+        <div id="decomp_div" style="margin-top:-20" hidden>
+          <button id="decomp_button" style="display:block" onclick="decompile()">Decompile</button>
+          <textarea id='decomp_text' rows="28" style="width: 600;height: 400;" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea> 
         </div>
       </div>
       <br>

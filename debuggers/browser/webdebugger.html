@@ -323,10 +323,10 @@ function decompile() {
   var txt = $("#output").val();
   instrs = parse(txt);
   if ("error" in instrs[0]) {
-    $("#decomp").val(instrs[0].error+'\n'+instrs[0].details);
+    $("#decomp_text").val(instrs[0].error+'\n'+instrs[0].details);
   }
   else{
-    $("#decomp").val(print_instrs(instrs));    
+    $("#decomp_text").val(print_instrs(instrs));    
   }
 }
 

@@ -268,23 +268,28 @@ function parse(txt) {
   return instrs;
 }
 
-function instr_info(code, name, bytes, cycles) {
-  return {code:code, name:name, bytes:bytes, cycles:cycles};
+function instr_info(code, name, bytes, cycles, custom_format=null) {
+  return {code:code, name:name, bytes:bytes, cycles:cycles, format:custom_format};
+}
+
+function print_addr(high,low) {
+  return `Address = 0x${high}${low}`;
+}
+
+instr_table = {
+  0xea: instr_info("NOP", "No Op", 1, 2),
+  0xa9: instr_info("LDA", "Load Accum", 2, 2),
+  0x8d: instr_info("STA", "Store Accum In Memory", 3, 4, print_addr),
+  0x6a: instr_info("ROR", "Rotate Right", 1, 2),
+  0x4c: instr_info("JMP", "Jump", 3, 3, print_addr),
 }
 
 function lookup_instruction(data) {
   if (typeof data == "string") {
     data = parseInt(data,"16");
   }
-  instrs = {
-    0xea: instr_info("NOP", "No Op", 1, 2),
-    0xa9: instr_info("LDA", "Load Accum", 2, 2),
-    0x8d: instr_info("STA", "Store Accum In Memory", 3, 4),
-    0x6a: instr_info("ROR", "Rotate Right", 1, 2),
-    0x4c: instr_info("JMP", "Jump", 3, 3),
-  }
   if (data in instrs) {
-    return instrs[data];
+    return instr_table[data];
   }
   return instr_info("parse_error", "", 0, 0);
 }
@@ -305,6 +310,9 @@ function print_instrs(instrs) {
       for (data_byte=0; data_byte<(instruction.bytes-1); data_byte+=1) {
         output += `data=${instrs[log_events+1].data}, `;
         log_events+=1;
+      }
+      if (instruction.format) {
+        output += `formatted: ${instruction.format(instrs[log_events].data, instrs[log_events-1].data)}`;
       }
       //Wait any additional extra cycles
       if (instruction.cycles > instruction.bytes) {

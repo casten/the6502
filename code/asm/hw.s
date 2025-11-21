@@ -29,7 +29,7 @@ reset:
   sta PORTA
 
   ; 3. Display on/off control
-  lda #%00001110   ;Display On, Cursor On, No Curdor Blink
+  lda #%00001110   ;Display On, Cursor On, No Cursor Blink
   sta PORTB
   
   ; Toggle E on the Display

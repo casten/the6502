@@ -107,7 +107,7 @@ void handleSWSMsg(JSONVar parameter) {
   }
   else
   if (parameter["action"] == String("set_logging")) {
-    disable_logging = parameter["enabled"];
+    disable_logging = parameter["disabled"];
   }
   process_event = true;
 }

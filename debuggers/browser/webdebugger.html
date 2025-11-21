@@ -21,7 +21,7 @@ var notifiedLogTruncation = false;
 
 function add_text(id, text, end="\n") {
   const textCtl = $("#"+id);
-  if (!(textCtl in lineCounts)){
+  if (!(textCtl in lineCounts) || !textCtl.val().length){
     lineCounts[textCtl] = 0;
   }
   lineCounts[textCtl] += 1;
@@ -151,9 +151,9 @@ function toggleLogging() {
   var dl_check = $("#disable_logging").is(":checked");
   swsConnection.send("debugger",{
     action: "set_logging",
-    enabled: !dl_check
+    disabled: dl_check
   });
-  add_text("log","Set logging enabled to: "+dl_check);
+  add_text("log","Set logging disabled to: "+dl_check);
 }
 
 function click_header() {
@@ -169,6 +169,9 @@ function get_instrs(txt) {
     instrs = [];
     for (index in lines) {
       line = lines[index];
+      if (line.length == 0){
+        continue;
+      }
       toks = line.split(/\s+/);
       instr = {
         addr_b: toks[0],
@@ -268,55 +271,83 @@ function parse(txt) {
   return instrs;
 }
 
-function instr_info(code, name, bytes, cycles, custom_format=null) {
-  return {code:code, name:name, bytes:bytes, cycles:cycles, format:custom_format};
+
+function print_default(log, cycle, instruction) {
+  var out = "";
+  if (instruction.bytes > 1 ){
+    for (var i=1;i<instruction.bytes;i++) {
+      out += `${log[cycle+i].data},`;       
+    }
+  }
+  return out;
 }
 
-function print_addr(high,low) {
-  return `Address = 0x${high}${low}`;
+
+function print_addr(log, cycle, instruction) {
+  return `Address = 0x${log[cycle+2].data}${log[cycle+1].data}, `;
+}
+
+function print_lda(log, cycle, instruction) {
+  var decoded = h_to_c_b(log[cycle+1].data);
+  return `data=${log[cycle+1].data} (c='${decoded[0]}',b=${decoded[1]}), `;
+}
+
+function print_jsr(log, cycle, instruction) {
+  return `Address = 0x${log[cycle+2].data}${log[cycle+1].data}, `;
+}
+
+function instr_info(opcode, code, name, bytes, cycles, format=print_default) {
+  return {opcode:opcode, code:code, name:name, bytes:bytes, cycles:cycles, format:format};
 }
 
 instr_table = {
-  0xea: instr_info("NOP", "No Op", 1, 2),
-  0xa9: instr_info("LDA", "Load Accum", 2, 2),
-  0x8d: instr_info("STA", "Store Accum In Memory", 3, 4, print_addr),
-  0x6a: instr_info("ROR", "Rotate Right", 1, 2),
-  0x4c: instr_info("JMP", "Jump", 3, 3, print_addr),
+  0xea: instr_info("ea", "NOP", "No Op",                      1, 2),
+  0xa9: instr_info("a9", "LDA", "Load Accum",                 2, 2, print_lda),
+  0x8d: instr_info("8d", "STA", "Store Accum In Memory",      3, 4, print_addr),
+  0x6a: instr_info("6a", "ROR", "Rotate Right",               1, 2),
+  0x4c: instr_info("4c", "JMP", "Jump",                       3, 3, print_addr),
+  0x9a: instr_info("9a", "TXS", "Transfer Index A to Stack",  1, 2),
+  0xa2: instr_info("a2", "LDX", "Load Index X with Memory",   2, 2),
+  0x20: instr_info("20", "JSR", "Jump to Subroutine",         3, 6, print_addr),
+  0x60: instr_info("60", "RTS", "Return from Subroutine",     1, 6),
+  0x48: instr_info("48", "PHA", "Push Accum to Stack",        1, 3),
+  0xad: instr_info("ad", "LDA", "Load Accum from Absolute",   3, 4, print_addr),
+  0x29: instr_info("29", "AND", "AND Memory w/ Accum Immed.", 2, 2),
+  0x68: instr_info("68", "PLA", "Pull Accum from Stack",      1, 4),
+  0xd0: instr_info("d0", "BNE", "Branch on Result not Zero",  2, 2),
 }
 
-function lookup_instruction(data) {
-  if (typeof data == "string") {
-    data = parseInt(data,"16");
+function lookup_instruction(opcode) {
+  if (typeof opcode == "string") {
+    opcode = parseInt(opcode,"16");
   }
-  if (data in instrs) {
-    return instr_table[data];
+  if (opcode in instr_table) {
+    return instr_table[opcode];
   }
-  return instr_info("parse_error", "", 0, 0);
+  return instr_info("parse_error", "", "", 0, 0);
 }
 
-function print_instrs(instrs) {
-  var output = "Address, Data, Instruction Info\n"+
-               "-----------------------------\n";
+function h_to_c_b(hex_str) {
+  var v = parseInt(hex_str, 16);
+  return [String.fromCharCode(v), v.toString(2)];
+}
 
-  var instrs_count = instrs.length;
-  output += `fffc, ${instrs[0].data}, Load Start Address High Byte\n`;
-  output += `fffd, ${instrs[1].data}, Load Start Address Low Byte\n`;
+function print_log(log) {
+  var output = "Address, Opcode, Info\n"+
+               "---------------------\n";
 
-  for(log_events=2; log_events<instrs_count-2; log_events++) {
-    var instr = instrs[log_events]
+  var instrs_count = log.length;
+  output += `fffc, ${log[0].data}, Load Start Address High Byte\n`;
+  output += `fffd, ${log[1].data}, Load Start Address Low Byte\n`;
+
+  for(var cycle=2; cycle<instrs_count-2; cycle++) {
+    var instr_line = log[cycle]
     try {
-      instruction = lookup_instruction(instr.data)
-      output += `${instr.addr}, ${instr.data}, ${instruction.code}: `;
-      for (data_byte=0; data_byte<(instruction.bytes-1); data_byte+=1) {
-        output += `data=${instrs[log_events+1].data}, `;
-        log_events+=1;
-      }
-      if (instruction.format) {
-        output += `formatted: ${instruction.format(instrs[log_events].data, instrs[log_events-1].data)}`;
-      }
-      //Wait any additional extra cycles
-      if (instruction.cycles > instruction.bytes) {
-        log_events += instruction.cycles-instruction.bytes;
+      instruction = lookup_instruction(instr_line.data)
+      output += `${instr_line.addr}, ${instr_line.data}, ${instruction.code}: `;
+      output += instruction.format(log, cycle, instruction);  
+      if (instruction.cycles > 1) {
+        cycle += instruction.cycles-1;
       }
     }
     catch(error) {
@@ -329,12 +360,12 @@ function print_instrs(instrs) {
 
 function decompile() {
   var txt = $("#output").val();
-  instrs = parse(txt);
-  if ("error" in instrs[0]) {
-    $("#decomp_text").val(instrs[0].error+'\n'+instrs[0].details);
+  log = parse(txt);
+  if ("error" in log[0]) {
+    $("#decomp_text").val(log[0].error+'\n'+log[0].details);
   }
   else{
-    $("#decomp_text").val(print_instrs(instrs));    
+    $("#decomp_text").val(print_log(log));    
   }
 }
 

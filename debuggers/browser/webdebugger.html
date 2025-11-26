@@ -334,8 +334,9 @@ function lookup_instruction(opcode) {
 }
 
 function h_to_c_b(hex_str) {
-  var v = parseInt(hex_str, 16);
-  return [String.fromCharCode(v), v.toString(2)];
+  var val = parseInt(hex_str, 16);
+  var b = val.toString(2).padStart(8,'0');
+  return [String.fromCharCode(val), b];
 }
 
 function print_log(log) {

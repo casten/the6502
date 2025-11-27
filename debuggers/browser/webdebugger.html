@@ -219,6 +219,11 @@ function get_wrong_lines(addr) {
 function diagnose_missing_reset_vector(instrs) {
   var resetting = false;
   var reset_phase = 0;
+  if (instrs.length > 999) {
+    return "The log buffer exceeded 1000 lines and the start scrolled off.  "+
+    "The debugger can only debug up to 1000 lines for now.  Sorry.";
+  }
+
   for (index in instrs){
     if (instrs[index].reset == 'R') {
       resetting = true;

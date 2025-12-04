@@ -11,10 +11,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-<link rel="icon" href="/img/favicon.ico" sizes="32x32">
-<link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+<link rel="icon" href="img/favicon.ico" sizes="32x32">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
-
+<style>
+  .thumbnail {
+    height:200px; float:left;margin:20px;
+    transition: transform 0.3s ease-in-out;
+  }
+  .thumbnail:hover {
+    transform: scale(3);
+}
+</style>
 <script>
 function downloadURI(uri, name) {
   var link = document.createElement("a");
@@ -34,7 +42,7 @@ function downloadURI(uri, name) {
   .fa-anchor,.fa-coffee {font-size:200px}
   .my-background-div {
       width: 100%; /* Set width as needed */
-      background-image: url('/img/breadboard2.png');
+      background-image: url('img/breadboard2.png');
       background-repeat: no-repeat;
       background-size: cover;
       background-position: center;
@@ -96,12 +104,19 @@ function downloadURI(uri, name) {
          <br>
          As a bonus, you'll be working with a historically important CPU, the 6502 which was used for early Apple, Atari, Commodore, Nintendo computers and gaming systems. 
       </h5>
+      <div style="width: max-content; margin-left: -100px">
+        <img src="img/workshop1.jpg" class="thumbnail" >
+        <img src="img/workshop2.jpg" class="thumbnail">
+        <img src="img/workshop3.jpg" class="thumbnail">
+        <img src="img/workshop4.jpg" class="thumbnail">
+        <img src="img/workshop5.jpg" class="thumbnail">
+      </div>
 
       <p class="w3-text-grey"></p>
     </div>
 
     <div class="w3-third w3-center">
-      <img class="fa w3-padding-64 w3-text-red" src="/img/network2.png" width="300"></i>
+      <img class="fa w3-padding-64 w3-text-red" src="img/network2.png" width="300"></i>
     </div>
   </div>
 </div>
@@ -114,7 +129,7 @@ function downloadURI(uri, name) {
           Want to attend or schedule a workshop?<br>
           Email:<br>
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-          info {at} the6502 {dot} com<br>
+          casten {dot} riepling {at} gmail {dot} com<br>
           for details.
       </h5>
 
